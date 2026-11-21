@@ -31,6 +31,13 @@
 | TRAP-26 | 旧版本复核 | 覆盖新结论 | 事务条件更新 | `app/store.py` | `tests/test_archive.py::test_stale_review` |
 | TRAP-11 | 时区混用 | 同刻不同桶 | UTC归整 | `app/modules/m2_mapping/coerce.py` | `tests/test_versions.py::test_same_instant` |
 | TRAP-19 | 三方约束矛盾 | 输出伪精确数 | 非负原子区域可行检查 | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py::test_three_way_contradiction` |
+| TRAP-30 | 改造期沿用旧东门整区 | 整区掩盖扶梯口重叠 | 分段归属 SPLIT 裁决 | `app/renovation/partition.py` | `tests/test_renovation.py::test_confirmed_without_boundary_uses_interval_not_forged_exact` |
+| TRAP-31 | 两段直接相加 | 扶梯口算两遍 | A1+A2-I，缺交集给保守区间 | `app/renovation/partition.py` | `tests/test_renovation.py::test_split_observed_overlap_subtracts_escalator_once` |
+| TRAP-32 | 归属未确认即并入 | 静默产生正式人数 | pending 只入待确认证据 | `app/renovation/engine.py` | `tests/test_renovation.py::test_pending_attribution_never_enters_official` |
+| TRAP-33 | 补传全量重算 | 未触及时段被改写 | 仅受影响桶重算、其余沿用快照 | `app/renovation/service.py` | `tests/test_renovation.py::test_partial_recompute_only_touches_affected_buckets` |
+| TRAP-34 | 重跑同一记录新增版本 | 版本膨胀、证据漂移 | 内容哈希幂等暂存 | `app/renovation/store.py` | `tests/test_renovation.py::test_upload_is_idempotent_same_record` |
+| TRAP-35 | 发布失败污染旧版 | 旧证据被覆盖 | 显式事务+乐观版本，失败回滚 | `app/renovation/store.py` | `tests/test_renovation.py::test_failed_publish_rolls_back_and_keeps_old` |
+| TRAP-36 | 页面与归档口径分叉 | 两份归属不一致 | 单快照双出口共用 attribution | `app/renovation/export_out.py` | `tests/test_renovation.py::test_export_and_snapshot_share_attribution` |
 
 ## 对账规则
 

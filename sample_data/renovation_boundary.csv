@@ -1,0 +1,3 @@
+id,bucket,version,kind,left,right,count,unit,note
+b0001,2026-11-16T10:00:00+08:00,1,pair,A1,A2,20,人,扶梯口重叠边界补传
+b0002,2026-11-16T11:00:00+08:00,1,pair,A1,A2,15,人,扶梯口重叠边界补传

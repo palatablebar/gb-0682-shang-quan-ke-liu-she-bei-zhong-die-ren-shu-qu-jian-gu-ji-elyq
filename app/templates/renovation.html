@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>改造期分区裁决 · 正式人数区间</title>
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="/static/layout.css">
+  <link rel="stylesheet" href="/static/components.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="wordmark">FLOW<br><span>RENOVATION</span></div>
+    <div class="rail-code">改造期 / 东门分段归属</div>
+    <nav>
+      <a href="/renovation" class="active"><i>改</i>改造期分区裁决</a>
+      <a href="/m5_calculate"><i>5</i>常规人数估界</a>
+      <a href="/m7_archive"><i>7</i>报告归档</a>
+    </nav>
+    <div class="rail-tail">A1 东门北段<br>A2 东门南段<br>扶梯口为两段重叠</div>
+  </aside>
+  <div class="work">
+    <header class="topbar">
+      <strong>改造期正式人数区间</strong>
+      <small>当前正式版本 V{{ current_version }}</small>
+    </header>
+    <main>
+      <div class="heading">
+        <div>
+          <span class="eyebrow">RENOVATION / 同一份分区归属</span>
+          <h1>东门分段 · 扶梯口重叠裁决</h1>
+        </div>
+        <div class="batch-code">正式版本 V{{ latest.version if latest else 0 }}<br>
+          <span>区间页面与归档证据共用快照</span></div>
+      </div>
+      <output id="notice" role="status" aria-live="polite"></output>
+
+      <section class="panel observations">
+        <div class="panel-head"><h2>分区归属（唯一口径来源）</h2><span>{{ parts|length }} 条</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>分区</th><th>父区</th><th>名称</th><th>状态</th><th>有效窗口(UTC)</th><th>来源</th></tr></thead>
+            <tbody>
+            {% for p in parts %}
+              <tr>
+                <td><b>{{ p.part }}</b></td><td>{{ p.zone }}</td><td>{{ p.label }}</td>
+                <td><span class="severity" data-status="{{ p.status }}">{{ p.status }}</span></td>
+                <td>{{ p.effective_from or '—' }} → {{ p.effective_to or '并回前' }}</td>
+                <td>{{ p.source }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <form id="part-form" class="action-row">
+          <input name="part" placeholder="分区 A1/A2" required>
+          <select name="status"><option value="pending">pending 待确认</option><option value="confirmed">confirmed 已确认</option><option value="merged">merged 已并回</option></select>
+          <input name="effective_from" placeholder="生效起 带时区 ISO">
+          <input name="effective_to" placeholder="生效止（可空）">
+          <button type="submit">登记/更新归属</button>
+        </form>
+      </section>
+
+      <section class="panel controls">
+        <div class="panel-head"><h2>补传边界记录</h2><span>仅重算受影响时段</span></div>
+        <form id="boundary-form" class="action-row">
+          <textarea name="csv" rows="4" placeholder="粘贴与主管线同表头的边界 CSV（A1/A2 分区与扶梯口 pair）"></textarea>
+          <button type="submit">补传并暂存</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>内容哈希</th><th>首桶</th><th>已应用版本</th><th>记录数</th></tr></thead>
+            <tbody>
+            {% for b in staged %}
+              <tr><td>{{ b.digest }}</td><td>{{ b.bucket }}</td>
+                <td>{{ b.applied_version or '未发布' }}</td><td>{{ b.payload|length }}</td></tr>
+            {% else %}<tr><td colspan="4">暂无暂存边界记录</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="action-row">
+          <button id="recompute" class="filled">预演重算（不发布）</button>
+          <button id="publish" data-rev="{{ current_version }}">发布正式版本</button>
+          {% if latest %}
+          <a class="link-button" href="/api/renovation/versions/{{ latest.version }}/export.csv">下载本版归档证据</a>
+          {% endif %}
+        </div>
+      </section>
+
+      {% if latest %}
+      <section class="panel observations">
+        <div class="panel-head"><h2>正式人数区间（V{{ latest.version }}）</h2>
+          <span>{{ latest.business.buckets }} 桶 · 下界 {{ latest.business.total }} / 上界 {{ latest.business.upper_total }}</span></div>
+        <div class="intervals">
+          {% set scale = latest.calculations|map(attribute='upper')|max if latest.calculations else 1 %}
+          {% for r in latest.calculations %}
+          <div class="interval-row">
+            <span>{{ r.bucket[11:16] }}</span>
+            <div class="track"><i style="left:{{ r.lower/scale*100 }}%;width:{{ (r.upper-r.lower)/scale*100 }}%"></i></div>
+            <b>{{ r.lower }}–{{ r.upper }}</b><small>{{ r.code }}</small>
+          </div>
+          {% else %}<p>暂无正式区间：归属未确认的时段不会并入。</p>{% endfor %}
+        </div>
+        <p class="hash">重算桶：{{ latest.recomputed_buckets|join('、') or '无' }} ｜ 沿用桶：{{ latest.kept_buckets|join('、') or '无' }}</p>
+      </section>
+
+      <section class="panel rejects">
+        <div class="panel-head"><h2>待确认归属（未并入正式结果）</h2><span>{{ latest.pending|length }} 条</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>时段</th><th>分区</th><th>原因码</th><th>归属状态</th></tr></thead>
+            <tbody>
+            {% for p in latest.pending %}
+            <tr><td>{{ p.bucket[11:16] }}</td><td>{{ p.parts|join('/') }}</td>
+              <td><span class="severity">{{ p.code }}</span></td>
+              <td>{{ p.attribution.statuses }}</td></tr>
+            {% else %}<tr><td colspan="4">无待确认记录</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel rejects">
+        <div class="panel-head"><h2>隔离记录</h2><span>{{ latest.quarantine|length }} 条</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>时段</th><th>观测ID</th><th>原因码</th></tr></thead>
+            <tbody>
+            {% for q in latest.quarantine %}
+            <tr><td>{{ q.bucket[11:16] if q.bucket else '—' }}</td><td>{{ q.id }}</td>
+              <td><span class="severity">{{ q.code }}</span></td></tr>
+            {% else %}<tr><td colspan="3">无隔离观测</td></tr>
+            {% endfor %}
+          </table>
+        </div>
+      </section>
+      {% endif %}
+    </main>
+    <footer class="statusbar"><span>RENOVATION / 单快照双出口</span><span>V{{ current_version }}</span></footer>
+  </div>
+</div>
+<script src="/static/renovation.js" defer></script>
+</body>
+</html>

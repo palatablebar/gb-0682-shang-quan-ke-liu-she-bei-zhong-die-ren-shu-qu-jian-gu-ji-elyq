@@ -1,7 +1,9 @@
 from collections import defaultdict
 from decimal import Decimal
 from datetime import datetime
-ALIASES={'东门':'A','中庭':'B','西门':'C','A':'A','B':'B','C':'C'}
+ALIASES={'东门':'A','中庭':'B','西门':'C','A':'A','B':'B','C':'C',
+         '东门A段':'A1','东门北段':'A1','A1':'A1',
+         '东门B段':'A2','东门南段':'A2','A2':'A2'}
 
 def apply(state):
     groups=defaultdict(list);bad=[]
